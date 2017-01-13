@@ -131,6 +131,7 @@ public class CRP {
 
         {
             Packet.globlhop_count = 0;
+            Packet.GlobalQueuingTime = 0;
             int pack_send = 0;
             int message_delivered = 0;
             while (true) {
@@ -141,7 +142,10 @@ public class CRP {
                     pack_send++;
                 }
                 for (Node n : frame.nodes) {
+
+                    int QueuingTime = 0;
                     while (n.MessageQueue.size() > 0) {
+                        QueuingTime++;
                         Packet p = n.MessageQueue.remove();
                         double r = Math.random();
                         if (p.D != n.ID || r < CaptureProbablity) {
@@ -153,11 +157,14 @@ public class CRP {
                             Next_Hop.sendMessage(p);
                             p.HOP_C++;
                             Packet.incGlobalHop();
+                            Packet.incQueuingTime(QueuingTime);
                             Edge e = find_edge(n.ID, Next_Hop.ID);
                             frame.EdgeColor(e, Color.red);
                         } else {
                             // n.sendMessage(p);
                             message_delivered++;
+                            Packet.incGlobalHop();
+                            Packet.incQueuingTime(QueuingTime);
                             //System.out.println("Message Delivered:" + message_delivered);
                         }
                     }
@@ -173,12 +180,14 @@ public class CRP {
                 // Thread.sleep(500);
             }
             double Hop_C = Packet.globlhop_count;
-
+            int QueuingTime = Packet.GlobalQueuingTime;
             double HopC_Avg = Hop_C / NumPack;
-            System.out.println(HopC_Avg + "\t");
+            double QueuingTime_Avg = QueuingTime / NumPack;
+            System.out.print(HopC_Avg + "\t" + QueuingTime_Avg + "\t");
         }
         {
             Packet.globlhop_count = 0;
+            Packet.GlobalQueuingTime = 0;
             int pack_send = 0;
             int message_delivered = 0;
             while (true) {
@@ -189,7 +198,9 @@ public class CRP {
                     pack_send++;
                 }
                 for (Node n : frame.nodes) {
+                    int QueuingTime = 0;
                     while (n.MessageQueue.size() > 0) {
+                        QueuingTime++;
                         Packet p = n.MessageQueue.remove();
                         double r = Math.random();
                         if (p.D != n.ID || r < CaptureProbablity) {
@@ -201,11 +212,14 @@ public class CRP {
                             Next_Hop.sendMessage(p);
                             p.HOP_C++;
                             Packet.incGlobalHop();
+                            Packet.incQueuingTime(QueuingTime);
                             Edge e = find_edge(n.ID, Next_Hop.ID);
                             frame.EdgeColor(e, Color.blue);
                         } else {
                             // n.sendMessage(p);
                             message_delivered++;
+                            Packet.incGlobalHop();
+                            Packet.incQueuingTime(QueuingTime);
                             //  System.out.println("Message Delivered:" + message_delivered);
                         }
                     }
@@ -221,9 +235,10 @@ public class CRP {
                 // Thread.sleep(500);
             }
             double Hop_C = Packet.globlhop_count;
-
+            double QueuingTime = Packet.GlobalQueuingTime;
             double HopC_Avg = Hop_C / NumPack;
-            System.out.println(HopC_Avg + "\t");
+            double QueuingTime_Avg = QueuingTime / NumPack;
+            System.out.println(HopC_Avg + "\t" + QueuingTime_Avg);
         }
         Thread.sleep(10000);
 
