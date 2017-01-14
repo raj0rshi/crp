@@ -18,11 +18,11 @@ public class CRP {
     /**
      * @param args the command line arguments
      */
-    public static final int FACT = 1;
+    public static final double FACT = 1.5;
     public static ArrayList<Node> nodes;
     public static ArrayList<Edge> edges;
-    public static final int W_H = 1920 / FACT;
-    public static final int W_W = 1080 / FACT;
+    public static final int W_H = (int)(1920.0 / FACT);
+    public static final int W_W = (int)(1080 / FACT);
     public static final int BLOCK_SIZE = 70;
     public static int ID = 0;
     public static final int NODES_PER_BLOCK = 8;
@@ -31,13 +31,15 @@ public class CRP {
     public static Node[][] next;
 
     //parametres
-    public static double Alpha = .5;
-    public static double Beta = 0.0;
-    public static double Gama = Alpha;
-    public static double CaptureProbablity = .2;
+    public static double Alpha = .80;
+    public static double Beta = 0.00;
+    public static double Gama =Alpha;
+    public static double CaptureProbablity = .5;
     public static int NumPack = 1000;
     public static int Degree_of_effectiveness = 1;
-    public static int Protocol = 2;
+    static int loop = 1;
+
+    public static int routing = 2;
 
     public static void main(String[] args) throws InterruptedException {
         // TODO code application logic here
@@ -65,7 +67,7 @@ public class CRP {
         System.out.println("#Edges:" + edges.size());
         GraphDraw frame = new GraphDraw(nodes, edges);
         frame.setSize(W_H, W_W);
-        frame.setAlwaysOnTop(true);
+       // frame.setAlwaysOnTop(true);
         frame.setVisible(true);
 
         dist = new int[N + 1][N + 1];
@@ -123,124 +125,134 @@ public class CRP {
         Node S = nodes.get(15 + (int) (Math.random() * N / 6));
         Node D = nodes.get(3 * N / 4 + (int) (Math.random() * N / 4));
 
-        // S = nodes.get(30);
-        //   D = nodes.get(600);
+        S = nearest_node(W_W / 4, W_H / 4);
+        D = nearest_node(4 * W_W / 3, W_H / 4);
         S.color = Color.BLUE;
 
         D.color = Color.MAGENTA;
 
-        {
-            Packet.globlhop_count = 0;
-            Packet.GlobalQueuingTime = 0;
-            int pack_send = 0;
-            int message_delivered = 0;
-            while (true) {
+        while (loop-- > 0) {
 
-                if (NumPack != pack_send) {
-                    Packet p = new Packet(S.ID, D.ID);
-                    S.sendMessage(p);
-                    pack_send++;
-                }
-                for (Node n : frame.nodes) {
+            for (Edge e : edges) {
+                e.color = e.initColor;
+            }
+            Alpha -= .05;
+            Gama = Alpha;
+            System.out.print(Alpha + "\t");
 
-                    int QueuingTime = 0;
-                    while (n.MessageQueue.size() > 0) {
-                        QueuingTime++;
-                        Packet p = n.MessageQueue.remove();
-                        double r = Math.random();
-                        if (p.D != n.ID || r < CaptureProbablity) {
-                            //  System.out.println("routing from " + n.ID + " to " + D.ID);
-                            Node Next_Hop = RoutingProtocol(n, p);
+            if (routing == 1 || routing == 0) {
+                Packet.globlhop_count = 0;
+                Packet.GlobalQueuingTime = 0;
+                int pack_send = 0;
+                int message_delivered = 0;
+                while (true) {
 
-                            Next_Hop = RoutingProtocol(n, p);
+                    if (NumPack != pack_send) {
+                        Packet p = new Packet(S.ID, D.ID);
+                        S.sendMessage(p);
+                        pack_send++;
+                    }
+                    for (Node n : frame.nodes) {
 
-                            Next_Hop.sendMessage(p);
-                            p.HOP_C++;
-                            Packet.incGlobalHop();
-                            Packet.incQueuingTime(QueuingTime);
-                            Edge e = find_edge(n.ID, Next_Hop.ID);
-                            frame.EdgeColor(e, Color.red);
-                        } else {
-                            // n.sendMessage(p);
-                            message_delivered++;
-                            Packet.incGlobalHop();
-                            Packet.incQueuingTime(QueuingTime);
-                            //System.out.println("Message Delivered:" + message_delivered);
+                        int QueuingTime = 0;
+                        while (n.MessageQueue.size() > 0) {
+                            QueuingTime++;
+                            Packet p = n.MessageQueue.remove();
+                            double r = Math.random();
+                            if (p.D != n.ID || r >CaptureProbablity) {
+                                //  System.out.println("routing from " + n.ID + " to " + D.ID);
+                                Node Next_Hop = RoutingProtocol(n, p);
+
+                                Next_Hop = RoutingProtocol(n, p);
+
+                                Next_Hop.sendMessage(p);
+                                p.HOP_C++;
+                                Packet.incGlobalHop();
+                                Packet.incQueuingTime(QueuingTime);
+                                Edge e = find_edge(n.ID, Next_Hop.ID);
+                                frame.EdgeColor(e, Color.red);
+                            } else {
+                                // n.sendMessage(p);
+                                message_delivered++;
+                              //  Packet.incGlobalHop();
+                             //   Packet.incQueuingTime(QueuingTime);
+                                //System.out.println("Message Delivered:" + message_delivered);
+                            }
                         }
+
                     }
 
-                }
-
-                if (message_delivered == NumPack) {
-                    // System.out.println("break");
-                    frame.repaint();
-                    break;
-                }
-
-                // Thread.sleep(500);
-            }
-            double Hop_C = Packet.globlhop_count;
-            int QueuingTime = Packet.GlobalQueuingTime;
-            double HopC_Avg = Hop_C / NumPack;
-            double QueuingTime_Avg = QueuingTime / NumPack;
-            System.out.print(HopC_Avg + "\t" + QueuingTime_Avg + "\t");
-        }
-        {
-            Packet.globlhop_count = 0;
-            Packet.GlobalQueuingTime = 0;
-            int pack_send = 0;
-            int message_delivered = 0;
-            while (true) {
-
-                if (NumPack != pack_send) {
-                    Packet p = new Packet(S.ID, D.ID);
-                    S.sendMessage(p);
-                    pack_send++;
-                }
-                for (Node n : frame.nodes) {
-                    int QueuingTime = 0;
-                    while (n.MessageQueue.size() > 0) {
-                        QueuingTime++;
-                        Packet p = n.MessageQueue.remove();
-                        double r = Math.random();
-                        if (p.D != n.ID || r < CaptureProbablity) {
-                            //   System.out.println("routing from " + n.ID + " to " + D.ID);
-                            Node Next_Hop = RoutingProtocol(n, p);
-
-                            Next_Hop = RoutingProtocol2(n, p);
-
-                            Next_Hop.sendMessage(p);
-                            p.HOP_C++;
-                            Packet.incGlobalHop();
-                            Packet.incQueuingTime(QueuingTime);
-                            Edge e = find_edge(n.ID, Next_Hop.ID);
-                            frame.EdgeColor(e, Color.blue);
-                        } else {
-                            // n.sendMessage(p);
-                            message_delivered++;
-                            Packet.incGlobalHop();
-                            Packet.incQueuingTime(QueuingTime);
-                            //  System.out.println("Message Delivered:" + message_delivered);
-                        }
+                    if (message_delivered == NumPack) {
+                        // System.out.println("break");
+                        frame.repaint();
+                        break;
                     }
 
+                    // Thread.sleep(500);
                 }
-
-                if (message_delivered == NumPack) {
-                    //  System.out.println("break");
-                    frame.repaint();
-                    break;
-                }
-
-                // Thread.sleep(500);
+                double Hop_C = Packet.globlhop_count;
+                int QueuingTime = Packet.GlobalQueuingTime;
+                double HopC_Avg = Hop_C / NumPack;
+                double QueuingTime_Avg = QueuingTime / NumPack;
+                System.out.print(HopC_Avg + "\t" + QueuingTime_Avg + "\t");
             }
-            double Hop_C = Packet.globlhop_count;
-            double QueuingTime = Packet.GlobalQueuingTime;
-            double HopC_Avg = Hop_C / NumPack;
-            double QueuingTime_Avg = QueuingTime / NumPack;
-            System.out.println(HopC_Avg + "\t" + QueuingTime_Avg);
+            if (routing == 2 || routing == 0) {
+                Packet.globlhop_count = 0;
+                Packet.GlobalQueuingTime = 0;
+                int pack_send = 0;
+                int message_delivered = 0;
+                while (true) {
+
+                    if (NumPack != pack_send) {
+                        Packet p = new Packet(S.ID, D.ID);
+                        S.sendMessage(p);
+                        pack_send++;
+                    }
+                    for (Node n : frame.nodes) {
+                        int QueuingTime = 0;
+                        while (n.MessageQueue.size() > 0) {
+                            QueuingTime++;
+                            Packet p = n.MessageQueue.remove();
+                            double r = Math.random();
+                            if (p.D != n.ID || r < CaptureProbablity) {
+                                //   System.out.println("routing from " + n.ID + " to " + D.ID);
+                                Node Next_Hop = RoutingProtocol(n, p);
+
+                                Next_Hop = RoutingProtocol2(n, p);
+
+                                Next_Hop.sendMessage(p);
+                                p.HOP_C++;
+                                Packet.incGlobalHop();
+                                Packet.incQueuingTime(QueuingTime);
+                                Edge e = find_edge(n.ID, Next_Hop.ID);
+                                frame.EdgeColor(e, Color.blue);
+                            } else {
+                                // n.sendMessage(p);
+                                message_delivered++;
+                             //   Packet.incGlobalHop();
+                              //  Packet.incQueuingTime(QueuingTime);
+                                //  System.out.println("Message Delivered:" + message_delivered);
+                            }
+                        }
+
+                    }
+
+                    if (message_delivered == NumPack) {
+                        //  System.out.println("break");
+                        frame.repaint();
+                        break;
+                    }
+
+                    // Thread.sleep(500);
+                }
+                double Hop_C = Packet.globlhop_count;
+                double QueuingTime = Packet.GlobalQueuingTime;
+                double HopC_Avg = Hop_C / NumPack;
+                double QueuingTime_Avg = QueuingTime / NumPack;
+                System.out.println(HopC_Avg + "\t" + QueuingTime_Avg);
+            }
+            Thread.sleep(10000);
         }
-        Thread.sleep(10000);
 
     }
 
@@ -302,7 +314,7 @@ public class CRP {
         return Math.sqrt((x.x - y.x) * (x.x - y.x) + (x.y - y.y) * (x.y - y.y));
     }
 
-    static Edge find_edge(int v1, int v2) {
+    static Edge find_edge(double v1, double v2) {
         for (int pp = 0; pp < edges.size(); pp++) {
             Edge e = edges.get(pp);
             if ((e.V1.ID == v1) && (e.V2.ID == v2)) {
@@ -329,6 +341,22 @@ public class CRP {
             }
         }
         return min;
+    }
+
+    static Node nearest_node(int x1, int y1) {
+        double min = Double.MAX_VALUE;
+        Node nn = null;
+
+        for (int j = 0; j < nodes.size(); j++) {
+            Node x = nodes.get(j);
+            double dist = Math.sqrt((x.x - x1) * (x.x - x1) + (x.y - y1) * (x.y - y1));
+            if (dist <= min) {
+
+                min = dist;
+                nn = x;
+            }
+        }
+        return nn;
     }
 
 }

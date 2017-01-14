@@ -15,15 +15,18 @@ public class Edge {
 
     Node V1;
     Node V2;
-    Color color = Color.lightGray;
+    Color color;
+    Color initColor = Color.white;
 
     public Edge(Node v1, Node v2) {
         V1 = v1;
         V2 = v2;
+        color = initColor;
     }
 
     public Edge(int v1, int v2) {
         V1 = CRP.nodes.get(v1);
         V2 = CRP.nodes.get(v2);
+        color = initColor;
     }
 }
